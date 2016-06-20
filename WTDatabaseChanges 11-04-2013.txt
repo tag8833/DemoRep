@@ -12,10 +12,7 @@ CASE isnull(ViewOrEdit, 0)
 from tblSecuredControlsImport where isnull(Inverse,3) = 3
 
 
-INSERT INTO tblSecuredControlsDependent (SecuredControlName, SecuredFormName, SecuredControlDependentName, Inverse)
-select DependentControl, SecuredFormName, SecuredControlName, Inverse
-from tblSecuredControlsImport where isnull(Inverse, 3) <> 3
-
+Invalid	Code removed
 
 INSERT INTO tblSecuredPermissions (SecuredControlID, SecurityGroupID, SecuredFormID, ViewOrEdit, HasPermission)
 Select ti.SecuredControlId, ti.SecurityGroupID, ti.SecuredFormID, 1, isnull(op.CanEdit, 0) from qryTempImportHelper ti left outer join qryOldPermissionHelper op on  
