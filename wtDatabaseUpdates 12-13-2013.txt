@@ -1,6 +1,8 @@
 tblProjectTravelRequests
 TicketOrPurpose varchar(1000)
-
+Ticket1 varchar(1000)
+Ticket2 varchar(1000)
+Ticket2 varchar(1000)
 
 
 
