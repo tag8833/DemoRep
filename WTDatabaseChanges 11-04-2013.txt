@@ -1,0 +1,567 @@
+tblSecuredControls
+SecuredFormName
+(remove) SecuredFormID
+
+insert into tblSecuredControls
+(SecuredControlName, SecuredControlDisplayName, CanView, CanEdit, Section, SecuredFormName)
+select SecuredControlName, SecuredControlDisplayName, 
+CASE isnull(ViewOrEdit, 0) 
+                      WHEN 1 THEN 1 ELSE 0 END AS CanView,
+CASE isnull(ViewOrEdit, 0) 
+                      WHEN 0 THEN 1 ELSE 0 END AS CanEdit, Section, SecuredFormName
+from tblSecuredControlsImport where isnull(Inverse,3) = 3
+
+
+INSERT INTO tblSecuredControlsDependent (SecuredControlName, SecuredFormName, SecuredControlDependentName, Inverse)
+select DependentControl, SecuredFormName, SecuredControlName, Inverse
+from tblSecuredControlsImport where isnull(Inverse, 3) <> 3
+
+
+INSERT INTO tblSecuredPermissions (SecuredControlID, SecurityGroupID, SecuredFormID, ViewOrEdit, HasPermission)
+Select ti.SecuredControlId, ti.SecurityGroupID, ti.SecuredFormID, 1, isnull(op.CanEdit, 0) from qryTempImportHelper ti left outer join qryOldPermissionHelper op on  
+ti.SecurityGroupID = op.SecurityGroupID and ti.SecuredControlId = op.SecuredControlId
+where ti.CanView = 1
+union 
+Select ti.SecuredControlId, ti.SecurityGroupID, ti.SecuredFormID, 0, isnull(op.CanEdit, 0) from qryTempImportHelper ti left outer join qryOldPermissionHelper op on  
+ti.SecurityGroupID = op.SecurityGroupID and ti.SecuredControlId = op.SecuredControlId
+where ti.CanEdit = 1
+
+
+
+update sp set HasPermission = 0
+from tblSecuredPermissions sp left outer join 
+qryTempNoEdits ne on sp.SecurityGroupID = ne.SecurityGroupID and sp.SecuredFormID = ne.SecuredFormID
+where isnull(ne.SecuredFormID , 0) = 0 and ViewOrEdit = 0 and HasPermission = 1
+
+
+qryTempNoEdits
+SELECT     SecurityGroupID, SecuredFormID
+FROM         dbo.tblSecuredPermissions AS sp
+WHERE     (ViewOrEdit = 1) AND (HasPermission <> 0)
+GROUP BY SecurityGroupID, SecuredFormID
+
+
+qryOldPermissionHelper
+SELECT     dbo.tblSecuredControlsImport.SecuredFormName, dbo.tblSecuredControlsImport.SecuredControlName, dbo.tblSecurityObjects.SecurityObjectID, 
+                      dbo.qryOldPermissions.SecurityGroupID
+FROM         dbo.qryOldPermissions INNER JOIN
+                      dbo.tblSecurityObjects ON dbo.qryOldPermissions.SecurityObjectID = dbo.tblSecurityObjects.SecurityObjectID INNER JOIN
+                      dbo.tblSecuredControlsImport ON dbo.qryOldPermissions.Permission = dbo.tblSecuredControlsImport.OldSecurityPermission AND 
+                      dbo.tblSecurityObjects.SecurityObject = dbo.tblSecuredControlsImport.OldSecurityObject
+
+
+qryTempImportHelper
+SELECT     dbo.tblSecuredControls.SecuredControlId, dbo.tblSecuredForms.SecuredFormID, dbo.tblSecurityGroups.SecurityGroupID
+FROM         dbo.tblSecurityGroups CROSS JOIN
+                      dbo.tblSecuredControls INNER JOIN
+                      dbo.tblSecuredForms ON dbo.tblSecuredControls.SecuredFormName = dbo.tblSecuredForms.SecuredFormName
+
+
+qryOldPermissionImport
+SELECT     dbo.qryTempImportHelper.SecuredControlId, dbo.qryTempImportHelper.SecuredFormID, dbo.qryTempImportHelper.SecurityGroupID, 
+                      ISNULL(dbo.qryOldPermissionHelper.CanEdit, 0) AS CanEdit, 1 AS CanView
+FROM         dbo.qryTempImportHelper LEFT OUTER JOIN
+                      dbo.qryOldPermissionHelper ON dbo.qryTempImportHelper.SecurityGroupID = dbo.qryOldPermissionHelper.SecurityGroupID AND 
+                      dbo.qryTempImportHelper.SecuredControlId = dbo.qryOldPermissionHelper.SecuredControlId
+
+
+qrySecuredPermissionExceptions
+SELECT     dbo.tblSecuredForms.SecuredFormName, dbo.tblSecuredControlsException.SecuredControlName, 0 AS CanView, 0 AS CanEdit, 
+                      dbo.tblSecurityGroups.SecurityGroupID
+FROM         dbo.tblSecuredControlsException INNER JOIN
+                      dbo.tblSecuredForms ON dbo.tblSecuredControlsException.SecuredFormDisplayName = dbo.tblSecuredForms.SecuredFormDisplayName CROSS JOIN
+                      dbo.tblSecurityGroups
+
+
+
+tblSecuredControlsDependent
+SecuredControlDependentId	int	Unchecked
+SecuredControlName	varchar(100)	Checked
+SecuredFormName	varchar(100)	Checked
+SecuredControlDependentName	varchar(100)	Checked
+Inverse	bit	Checked
+
+
+tblSecuredControlsException
+SecuredControlException	int	Unchecked
+SecuredControlName	varchar(100)	Checked
+SecuredFormDisplayName	varchar(100)	Checked
+
+
+
+set ANSI_NULLS ON
+set QUOTED_IDENTIFIER ON
+GO
+
+create PROCEDURE [dbo].[spSecuredFormFind]
+
+	(
+		@SecuredFormName varchar(50),
+		@Ownership int = 0,
+		@TypeFilter int = 0,
+		@StatusFilter int = 0,
+		@OtherFilter int = 0
+	)
+
+AS
+	Select SecuredFormID
+from tblSecuredForms sf 
+Where sf.SecuredFormName = @SecuredFormName and isnull(sf.Ownership, 0) = @Ownership and isnull(sf.TypeFilter, 0) = @TypeFilter and isnull(sf.StatusFilter, 0) = @StatusFilter and isnull(sf.OtherFilter, 0) = @OtherFilter
+
+
+
+
+set ANSI_NULLS ON
+set QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[spSecuredPermissionsList]
+
+	(
+		@SecurityGroupID int
+	)
+
+AS
+	Select sp.SecuredPermissionId, sf.Module, sf.SecuredFormDisplayName, sc.Section, 
+case sp.ViewOrEdit
+when 0 then 'View'
+when 1 then 'Edit'
+end as ViewOrEditDisplay,
+sc.SecuredControlDisplayName, 
+sp.HasPermission
+from tblSecuredPermissions sp 
+inner join tblSecuredControls sc on sp.SecuredControlID = sc.SecuredControlID
+inner join tblSecuredForms sf on sp.SecuredFormID = sf.SecuredFormID
+Where sp.SecurityGroupID = @SecurityGroupID
+order by 
+sf.Module, sf.SecuredFormDisplayName, sc.Section, sp.ViewOrEdit, sc.SecuredControlName
+
+
+
+
+
+
+set ANSI_NULLS ON
+set QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[spSecuredPermissionsGet]
+
+	(
+		@FormID int,
+		@AdminID int
+	)
+
+AS
+	Select sp.SecuredControlName,                       CASE isnull(se.SecuredControlException, 0) 
+                      WHEN 0 THEN sp.CanView ELSE 0 END AS CanView, 
+                      CASE isnull(se.SecuredControlException, 0) 
+                      WHEN 0 THEN sp.CanEdit ELSE 0 END AS CanEdit
+from qrySecuredPermissionAll sp 
+inner join tblAdminSecurityGroupLink sg on sg.SecurityGroupID = sp.SecurityGroupID
+inner join tblSecuredForms sf on sf.SecuredFormName = sp.SecuredFormName
+left outer join tblSecuredControlsException se 
+on sf.SecuredFormDisplayName = se.SecuredFormDisplayName and sp.SecuredControlName = se.SecuredControlName
+Where sg.AdminID = @AdminID and sf.SecuredFormID = @FormID
+order by 
+sp.SecuredControlName, CanView desc, CanEdit desc
+
+
+
+
+
+
+
+set ANSI_NULLS ON
+set QUOTED_IDENTIFIER ON
+GO
+
+
+ALTER PROCEDURE [dbo].[spSecuredPermissionsInitialize]
+(
+@SecurityGroupID int
+)
+
+AS
+
+
+INSERT INTO tblSecuredPermissions (SecuredControlID, SecurityGroupID, SecuredFormID, ViewOrEdit, HasPermission)
+Select sc.SecuredControlId, @SecurityGroupID, sf.SecuredFormID, 0, 0 from tblSecuredControls sc inner join tblSecuredForms sf 
+on sc.SecuredFormName = sf.SecuredFormName left outer join tblSecuredPermissions sp on
+sp.SecuredFormID = sf.SecuredFormID and sp.SecuredControlId = sc.SecuredControlId and sp.SecurityGroupID = @SecurityGroupID
+left outer join tblSecuredControlsException se on se.SecuredFormDisplayName = sf.SecuredFormDisplayName and se.SecuredControlName = sc.SecuredControlName
+where sc.CanView <> 0 and isnull(sp.SecuredControlID, 0) = 0 and isnull(se.SecuredControlException, 0) = 0
+union
+Select sc.SecuredControlId, @SecurityGroupID, sf.SecuredFormID, 0, 0 from tblSecuredControls sc inner join tblSecuredForms sf 
+on sc.SecuredFormName = sf.SecuredFormName left outer join tblSecuredPermissions sp on
+sp.SecuredFormID = sf.SecuredFormID and sp.SecuredControlId = sc.SecuredControlId and sp.SecurityGroupID = @SecurityGroupID
+left outer join tblSecuredControlsException se on se.SecuredFormDisplayName = sf.SecuredFormDisplayName and se.SecuredControlName = sc.SecuredControlName
+where sc.CanEdit <> 0 and isnull(sp.SecuredControlID, 0) = 0 and isnull(se.SecuredControlException, 0) = 0
+
+
+
+
+
+
+
+
+
+set ANSI_NULLS ON
+set QUOTED_IDENTIFIER ON
+GO
+ALTER FUNCTION [dbo].[fnSecuredPermissionsAdminListHelper1]
+	(
+	@AdminID int
+	)
+RETURNS 
+@tblSecuredPermissionList TABLE(
+SecuredControlId int,
+SecuredFormID int, 
+ViewOrEdit int,
+HasPermission bit
+		)
+
+AS
+	BEGIN
+		insert into @tblSecuredPermissionList (SecuredControlId, SecuredFormID, ViewOrEdit, HasPermission)
+		
+
+		(Select sp.SecuredControlId, sp.SecuredFormID, sp.ViewOrEdit, 
+Max(case sp.HasPermission
+when 0 then 0
+else 1
+end )
+from tblSecuredPermissions sp 
+inner join tblSecurityGroups sg on sg.SecurityGroupID = sp.SecurityGroupID
+inner join tblAdminSecurityGroupLink sa on sg.SecurityGroupID = sa.SecurityGroupID
+Where sa.AdminID = @AdminId
+Group By
+sp.SecuredControlId, sp.SecuredFormID, sp.ViewOrEdit
+)
+	RETURN
+	END
+
+
+
+set ANSI_NULLS ON
+set QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[spSecuredPermissionsAdminList]
+
+	(
+		@AdminID int
+	)
+
+AS
+	Select sc.SecuredControlID, sf.Module, sf.SecuredFormDisplayName, sc.Section, 
+case f1.ViewOrEdit
+when 0 then 'View'
+when 1 then 'Edit'
+end as ViewOrEditDisplay,
+sc.SecuredControlDisplayName + ' (' + dbo.fnSecuredPermissionsAdminListHelper2(@AdminID, sc.SecuredControlID, f1.ViewOrEdit) + ')' as SecuredControlDisplayName, 
+f1.HasPermission
+from  dbo.fnSecuredPermissionsAdminListHelper1(@AdminID) f1 
+inner join tblSecuredControls sc on f1.SecuredControlID = sc.SecuredControlID
+inner join tblSecuredForms sf on f1.SecuredFormID = sf.SecuredFormID
+order by 
+sf.Module, SecuredFormDisplayName, sc.Section, f1.ViewOrEdit, sc.SecuredControlName
+
+
+
+
+
+
+
+
+
+
+
+qryOldPermissions
+SELECT     'V' AS Permission, SecurityObjectID, SecurityGroupID
+FROM         dbo.tblSecurityPermissions
+WHERE     (PermissionString LIKE '%V%')
+UNION
+SELECT     'A' AS Permission, SecurityObjectID, SecurityGroupID
+FROM         dbo.tblSecurityPermissions AS tblSecurityPermissions_4
+WHERE     (PermissionString LIKE '%A%')
+UNION
+SELECT     'E' AS Permission, SecurityObjectID, SecurityGroupID
+FROM         dbo.tblSecurityPermissions AS tblSecurityPermissions_3
+WHERE     (PermissionString LIKE '%E%')
+UNION
+SELECT     'D' AS Permission, SecurityObjectID, SecurityGroupID
+FROM         dbo.tblSecurityPermissions AS tblSecurityPermissions_2
+WHERE     (PermissionString LIKE '%D%')
+UNION
+SELECT     'S' AS Permission, SecurityObjectID, SecurityGroupID
+FROM         dbo.tblSecurityPermissions AS tblSecurityPermissions_1
+WHERE     (PermissionString LIKE '%S%')
+
+
+
+
+
+qrySecuredPermissionView
+SELECT     SecuredControlID, SecurityGroupID, HasPermission
+FROM         dbo.tblSecuredPermissions
+WHERE     (ViewOrEdit = 0)
+
+
+
+qrySecuredPermissionEdit
+SELECT     SecuredControlID, SecurityGroupID, HasPermission
+FROM         dbo.tblSecuredPermissions
+WHERE     (ViewOrEdit = 1)
+
+
+qrySecuredPermission
+SELECT     dbo.qrySecuredPermissionView.SecuredControlID, dbo.qrySecuredPermissionView.SecurityGroupID, ISNULL(dbo.qrySecuredPermissionView.HasPermission, 0) 
+                      AS CanView, ISNULL(dbo.qrySecuredPermissionEdit.HasPermission, 0) AS CanEdit
+FROM         dbo.qrySecuredPermissionView LEFT OUTER JOIN
+                      dbo.qrySecuredPermissionEdit ON dbo.qrySecuredPermissionView.SecuredControlID = dbo.qrySecuredPermissionEdit.SecuredControlID AND 
+                      dbo.qrySecuredPermissionView.SecurityGroupID = dbo.qrySecuredPermissionEdit.SecurityGroupID
+
+
+qrySecuredPermissionHelper
+SELECT     dbo.tblSecuredControls.SecuredFormName, dbo.tblSecuredControls.SecuredControlName, dbo.qrySecuredPermission.CanView, dbo.qrySecuredPermission.CanEdit, 
+                      dbo.qrySecuredPermission.SecurityGroupID
+FROM         dbo.qrySecuredPermission INNER JOIN
+                      dbo.tblSecuredControls ON dbo.qrySecuredPermission.SecuredControlID = dbo.tblSecuredControls.SecuredControlId
+
+
+qrySecuredPermissionDependent
+SELECT     dbo.tblSecuredControlsDependent.SecuredFormName, dbo.tblSecuredControlsDependent.SecuredControlDependentName AS SecuredControlName, 
+                      CASE isnull(dbo.tblSecuredControlsDependent.Inverse, 0) 
+                      WHEN 0 THEN dbo.qrySecuredPermissionHelper.CanView ELSE 1 - dbo.qrySecuredPermissionHelper.CanView END AS CanView, 
+                      CASE isnull(dbo.tblSecuredControlsDependent.Inverse, 0) 
+                      WHEN 0 THEN dbo.qrySecuredPermissionHelper.CanEdit ELSE 1 - dbo.qrySecuredPermissionHelper.CanEdit END AS CanEdit, 
+                      dbo.qrySecuredPermissionHelper.SecurityGroupID
+FROM         dbo.qrySecuredPermissionHelper INNER JOIN
+                      dbo.tblSecuredControlsDependent ON dbo.qrySecuredPermissionHelper.SecuredFormName = dbo.tblSecuredControlsDependent.SecuredFormName AND 
+                      dbo.qrySecuredPermissionHelper.SecuredControlName = dbo.tblSecuredControlsDependent.SecuredControlName
+
+
+
+qrySecuredPermissionAll
+SELECT     SecuredFormName, SecuredControlName, CanView, CanEdit, SecurityGroupID
+FROM         dbo.qrySecuredPermissionExceptions
+UNION
+SELECT     SecuredFormName, SecuredControlName, CanView, CanEdit, SecurityGroupID
+FROM         dbo.qrySecuredPermissionDependent
+UNION
+SELECT     SecuredFormName, SecuredControlName, CanView, CanEdit, SecurityGroupID
+FROM         dbo.qrySecuredPermissionHelper
+
+
+Todo 
+1) Clearing a 2 or 3rd level escalation should clear lower level ones.
+2) Fix "Unsent Emails" form.
+3) Filter by Bill Type
+4) Automate the Escalation Process.
+5) Escalate tasks, Part Orders, Part Assets, Worker process check reminders.
+6) Populate Worker Process Log.
+7) Populate Escalation schedule.
+8) create script that dumps all company specific data.
+9) If someone doesn't approve or decline a document in a day, resend the approval request.
+10) If someone Declines a document ask them for a "Reason to Decline".  Also have a "resolution" to be enterred by the project coordinator.
+11) Add webservice for contact person, contact email, contact phone on ticket search.
+
+
+Tables Changed:
+
+
+
+
+New Tables:
+
+tblSecuredForms
+SecuredFormID	int	Unchecked
+SecuredFormDisplayName	varchar(100)	Checked
+SecuredFormName	varchar(100)	Checked
+Ownership	int	Checked
+TypeFilter	int	Checked
+StatusFilter	int	Checked
+OtherFilter	int	Checked
+Module	varchar(50)	Checked
+
+
+tblSecuredControls
+SecuredControlId	int	Unchecked
+SecuredControlDisplayName	varchar(100)	Checked
+SecuredControlName	varchar(100)	Checked
+CanView	bit	Checked
+CanEdit	bit	Checked
+SecuredFormID	int	Checked
+Section	varchar(100)	Checked
+
+
+tblSecuredPermissions
+SecuredPermissionId	int	Unchecked
+SecuredControlID	int	Checked
+SecurityGroupID	int	Checked
+ViewOrEdit	int	Checked
+HasPermission	bit	Checked
+
+
+
+
+tblWorkerProcessLog
+WorkerProcessLogId	int	Unchecked
+Description	varchar(500)	Checked
+StartTime	datetime	Checked
+EndTime	datetime	Checked
+Results	varchar(500)	Checked
+
+
+tblEscalationSchedule
+ScheduleID	int	Unchecked
+LastTicketEscalation	datetime	Checked
+TicketEscalationRepeat	float	Checked
+LastTaskEscalation	datetime	Checked
+TaskEscalationRepeat	float	Checked
+LastPartOrderEscalation	datetime	Checked
+PartOrderEscalationRepeat	float	Checked
+LastReminderCheck	datetime	Checked
+ReminderCheckRepeat	float	Checked
+LastTicketArchive	datetime	Checked
+TicketArchiveRepeat	float	Checked
+LastAccountingTasks	datetime	Checked
+AccountingTasksRepeat	float	Checked
+LastAssetEscalation	datetime	Checked
+AssetEscaltionRepeat	float	Checked
+
+
+
+
+New Functions:
+
+
+
+
+
+
+
+
+
+
+
+
+set ANSI_NULLS ON
+set QUOTED_IDENTIFIER ON
+GO
+ALTER FUNCTION [dbo].[fnSecuredPermissionsAdminListHelper2]
+	(
+	
+	@AdminID int,
+@SecuredControlId int,
+@VieworEdit int
+	
+	)
+RETURNS varchar(254)
+AS
+	BEGIN
+	
+	DECLARE @SecurityGroup varchar(254)
+	DECLARE @OutString varchar(254)
+		SET @Outstring = ''
+	DECLARE myCursor CURSOR for select sg.SecurityGroup from tblSecuredPermissions sp
+inner join tblSecurityGroups sg on sg.SecurityGroupID = sp.SecurityGroupID
+inner join tblAdminSecurityGroupLink sa on sg.SecurityGroupID = sa.SecurityGroupID
+Where sa.AdminID = @AdminId and sp.VieworEdit = @VieworEdit and sp.SecuredControlID = @SecuredControlID and sp.HasPermission <> 0
+	open myCursor
+	fetch next from myCursor into @SecurityGroup
+	while @@FETCH_STATUS = 0
+	begin
+		set @OutString = @Outstring + @SecurityGroup + '; '
+		fetch next from myCursor into @SecurityGroup
+	end
+	close myCursor
+	deallocate myCursor
+	
+	RETURN @OutString
+	
+	
+	
+	
+	END
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+new Stored procedures:
+
+
+
+set ANSI_NULLS ON
+set QUOTED_IDENTIFIER ON
+GO
+
+
+create PROCEDURE [dbo].[spSecuredPermissionsEdit]
+(
+@SecuredPermissionId int,
+@HasPermission bit
+)
+
+AS
+
+
+UPDATE tblSecuredPermissions
+SET
+HasPermission = @HasPermission
+where SecuredPermissionId = @SecuredPermissionId
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+modified Stored Procedures:
+
+
+
+
+
+

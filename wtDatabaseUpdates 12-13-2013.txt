@@ -1,0 +1,372 @@
+tblProjectTravelRequests
+TicketOrPurpose varchar(1000)
+
+
+
+
+
+
+
+
+USE [WTHelpDesk]
+GO
+/****** Object:  StoredProcedure [dbo].[spProjectTravelRequestsAdd]    Script Date: 12/13/2013 12:00:40 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[spProjectTravelRequestsAdd]
+(
+@TicketOrPurpose varchar(1000),
+@DestinationAddress varchar(75) = null,
+@TravelerName varchar(50) = null,
+@DepartureCity varchar(50) = null,
+@ArrivalCity varchar(50) = null,
+@DepartureDate smalldatetime = null,
+@DepartureTime datetime = null,
+@DepartureDepartLand varchar(10) = null,
+@ReturnTo varchar(25) = null,
+@ReturnDate smalldatetime = null,
+@ReturnTime datetime = null,
+@ReturnDepartLand varchar(10) = null,
+@SeatingPreference varchar(20) = null,
+@RentalCarSize varchar(20) = null,
+@RentalCarCompany varchar(20) = null,
+@PromotionCode varchar(50) = null,
+@CarFeatures varchar(50) = null,
+@HotelLocation varchar(20) = null,
+@HotelLocationOther varchar(50) = null,
+@NumberOfRooms int = null,
+@AdultsPerRoom int = null,
+@NonSmoking bit = null,
+@TwoBeds bit = null,
+@Internet bit = null,
+@OtherFeature varchar(50) = null,
+@LowPrice float = null,
+@HighPrice float = null,
+@Hotel1 varchar(50) = null,
+@Hotel2 varchar(50) = null,
+@Hotel3 varchar(50) = null,
+@Approved bit = null,
+@ApprovedDate smalldatetime = null,
+@ProjectChildID integer = null,
+@Declined bit = null,
+@DeclinedDate smalldatetime = null,
+@ParentProjectID integer = null,
+@TicketID integer = null,
+@Address1 varchar(255) = null,
+@Address2 varchar(255) = null,
+@City varchar(50) = null,
+@State varchar(20) = null,
+@Zip varchar(20) = null
+
+)
+
+AS
+SET NOCOUNT ON
+INSERT INTO tblProjectTravelRequests (
+TicketOrPurpose,
+DestinationAddress,
+TravelerName,
+DepartureCity,
+ArrivalCity,
+DepartureDate,
+DepartureTime,
+DepartureDepartLand,
+ReturnTo,
+ReturnDate,
+ReturnTime,
+ReturnDepartLand,
+SeatingPreference,
+RentalCarSize,
+RentalCarCompany,
+PromotionCode,
+CarFeatures,
+HotelLocation,
+HotelLocationOther,
+NumberOfRooms,
+AdultsPerRoom,
+NonSmoking,
+TwoBeds,
+Internet,
+OtherFeature,
+LowPrice,
+HighPrice,
+Hotel1,
+Hotel2,
+Hotel3,
+Approved,
+ApprovedDate,
+ProjectChildID,
+Declined,
+DeclinedDate,
+ParentProjectID,
+TicketID,
+Address1,
+Address2,
+City,
+State,
+Zip
+)
+
+SELECT
+@TicketOrPurpose,
+@DestinationAddress,
+@TravelerName,
+@DepartureCity,
+@ArrivalCity,
+@DepartureDate,
+@DepartureTime,
+@DepartureDepartLand,
+@ReturnTo,
+@ReturnDate,
+@ReturnTime,
+@ReturnDepartLand,
+@SeatingPreference,
+@RentalCarSize,
+@RentalCarCompany,
+@PromotionCode,
+@CarFeatures,
+@HotelLocation,
+@HotelLocationOther,
+@NumberOfRooms,
+@AdultsPerRoom,
+@NonSmoking,
+@TwoBeds,
+@Internet,
+@OtherFeature,
+@LowPrice,
+@HighPrice,
+@Hotel1,
+@Hotel2,
+@Hotel3,
+@Approved,
+@ApprovedDate,
+@ProjectChildID,
+@Declined,
+@DeclinedDate,
+@ParentProjectID,
+@TicketID,
+@Address1,
+@Address2,
+@City,
+@State,
+@Zip
+SELECT @@IDENTITY as RowID
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+USE [WTHelpDesk]
+GO
+/****** Object:  StoredProcedure [dbo].[spProjectTravelRequestsEdit]    Script Date: 12/13/2013 12:01:28 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[spProjectTravelRequestsEdit]
+(
+@ProjectTravelRequestID int,
+@TicketOrPurpose varchar(1000),
+@DestinationAddress varchar(75) = null,
+@TravelerName varchar(50) = null,
+@DepartureCity varchar(50) = null,
+@ArrivalCity varchar(50) = null,
+@DepartureDate smalldatetime = null,
+@DepartureTime datetime = null,
+@DepartureDepartLand varchar(10) = null,
+@ReturnTo varchar(25) = null,
+@ReturnDate smalldatetime = null,
+@ReturnTime datetime = null,
+@ReturnDepartLand varchar(10) = null,
+@SeatingPreference varchar(20) = null,
+@RentalCarSize varchar(20) = null,
+@RentalCarCompany varchar(20) = null,
+@PromotionCode varchar(50) = null,
+@CarFeatures varchar(50) = null,
+@HotelLocation varchar(20) = null,
+@HotelLocationOther varchar(50) = null,
+@NumberOfRooms int = null,
+@AdultsPerRoom int = null,
+@NonSmoking bit = null,
+@TwoBeds bit = null,
+@Internet bit = null,
+@OtherFeature varchar(50) = null,
+@LowPrice float = null,
+@HighPrice float = null,
+@Hotel1 varchar(50) = null,
+@Hotel2 varchar(50) = null,
+@Hotel3 varchar(50) = null,
+@Approved bit = null,
+@ApprovedDate smalldatetime = null,
+@ProjectChildID integer = null,
+@Declined bit = null,
+@DeclinedDate smalldatetime = null,
+@ParentProjectID integer = null,
+@TicketID integer = null,
+@Address1 varchar(255) = null,
+@Address2 varchar(255) = null,
+@City varchar(50) = null,
+@State varchar(20) = null,
+@Zip varchar(20) = null
+
+)
+
+AS
+
+UPDATE tblProjectTravelRequests
+SET
+TicketOrPurpose = @TicketOrPurpose,
+DestinationAddress = @DestinationAddress,
+TravelerName = @TravelerName,
+DepartureCity = @DepartureCity,
+ArrivalCity = @ArrivalCity,
+DepartureDate = @DepartureDate,
+DepartureTime = @DepartureTime,
+DepartureDepartLand = @DepartureDepartLand,
+ReturnTo = @ReturnTo,
+ReturnDate = @ReturnDate,
+ReturnTime = @ReturnTime,
+ReturnDepartLand = @ReturnDepartLand,
+SeatingPreference = @SeatingPreference,
+RentalCarSize = @RentalCarSize,
+RentalCarCompany = @RentalCarCompany,
+PromotionCode = @PromotionCode,
+CarFeatures = @CarFeatures,
+HotelLocation = @HotelLocation,
+HotelLocationOther = @HotelLocationOther,
+NumberOfRooms = @NumberOfRooms,
+AdultsPerRoom = @AdultsPerRoom,
+NonSmoking = @NonSmoking,
+TwoBeds = @TwoBeds,
+Internet = @Internet,
+OtherFeature = @OtherFeature,
+LowPrice = @LowPrice,
+HighPrice = @HighPrice,
+Hotel1 = @Hotel1,
+Hotel2 = @Hotel2,
+Hotel3 = @Hotel3,
+Approved = @Approved,
+ApprovedDate = @ApprovedDate,
+ProjectChildID = @ProjectChildID,
+Declined = @Declined,
+DeclinedDate = @DeclinedDate,
+ParentProjectID = @ParentProjectID,
+TicketID = @TicketID,
+Address1 = @Address1,
+Address2 = @Address2,
+City = @City,
+State = @State,
+Zip = @Zip
+where ProjectTravelRequestID = @ProjectTravelRequestID
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+USE [WTHelpDesk]
+GO
+/****** Object:  StoredProcedure [dbo].[spRptProjectTravelRequests]    Script Date: 12/13/2013 12:07:02 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[spRptProjectTravelRequests]
+/* 01-29-10 MCE*/
+(
+	@FormID int,
+	@ProjectChildID as integer = null,
+	@ParentProjectID as integer = null
+)
+
+AS
+SET NOCOUNT ON
+
+SELECT tblProjectTravelRequests.ProjectTravelRequestID,
+	tblProjectTravelRequests.TicketOrPurpose,
+	tblProjectTravelRequests.DestinationAddress,
+	tblProjectTravelRequests.TravelerName,
+	tblProjectTravelRequests.DepartureCity,
+	tblProjectTravelRequests.ArrivalCity,
+	tblProjectTravelRequests.DepartureDate,
+	tblProjectTravelRequests.DepartureTime,
+	tblProjectTravelRequests.DepartureDepartLand,
+	tblProjectTravelRequests.ReturnTo,
+	tblProjectTravelRequests.ReturnDate,
+	tblProjectTravelRequests.ReturnTime,
+	tblProjectTravelRequests.ReturnDepartLand,
+	tblProjectTravelRequests.SeatingPreference,
+	tblProjectTravelRequests.RentalCarSize,
+	tblProjectTravelRequests.RentalCarCompany,
+	tblProjectTravelRequests.PromotionCode,
+	tblProjectTravelRequests.CarFeatures,
+	tblProjectTravelRequests.HotelLocation,
+	tblProjectTravelRequests.HotelLocationOther,
+	tblProjectTravelRequests.NumberOfRooms,
+	tblProjectTravelRequests.AdultsPerRoom,
+	tblProjectTravelRequests.OtherFeature,
+	tblProjectTravelRequests.LowPrice,
+	tblProjectTravelRequests.HighPrice,
+	tblProjectTravelRequests.Hotel1,
+	tblProjectTravelRequests.Hotel2,
+	tblProjectTravelRequests.Hotel3,
+	tblFormHistory.TicketID,
+	32 as FormTypeID,
+	case when NonSmoking='1' then 'Non Smoking' else '' end as NonSmoking,
+	case when TwoBeds='1' then '2 Beds' else '' end as TwoBeds,
+	case when Internet='1' then 'Internet' else '' end as Internet,
+	tblProjectTravelRequests.Address1,
+	tblProjectTravelRequests.Address2,
+	tblProjectTravelRequests.City,
+	tblProjectTravelRequests.State,
+	tblProjectTravelRequests.Zip,
+	tblClients.Company
+
+FROM tblProjectTravelRequests inner join tblFormHistory
+		on tblProjectTravelRequests.ProjectTravelRequestID = tblFormHistory.FormRecordID and tblFormHistory.FormID = 30
+	inner join tblParentProjects
+		on tblFormHistory.TicketID = tblParentProjects.WTTicketNumber
+	left outer join tblClients on tblClients.clientID = tblParentProjects.ClientID 
+
+WHERE tblProjectTravelRequests.ProjectTravelRequestID = @FormID  or (isnull(@FormID, 0) = 0 and tblParentProjects.ParentProjectID = @ParentProjectID)
+
