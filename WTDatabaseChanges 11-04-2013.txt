@@ -23,6 +23,7 @@ Select ti.SecuredControlId, ti.SecurityGroupID, ti.SecuredFormID, 0, isnull(op.C
 ti.SecurityGroupID = op.SecurityGroupID and ti.SecuredControlId = op.SecuredControlId
 where ti.CanEdit = 1
 
+Direct online Edit
 
 
 update sp set HasPermission = 0
@@ -150,7 +151,8 @@ ALTER PROCEDURE [dbo].[spSecuredPermissionsGet]
 	)
 
 AS
-	Select sp.SecuredControlName,                       CASE isnull(se.SecuredControlException, 0) 
+	Select sp.SecuredControlName, 
+                      CASE isnull(se.SecuredControlException, 0) 
                       WHEN 0 THEN sp.CanView ELSE 0 END AS CanView, 
                       CASE isnull(se.SecuredControlException, 0) 
                       WHEN 0 THEN sp.CanEdit ELSE 0 END AS CanEdit
